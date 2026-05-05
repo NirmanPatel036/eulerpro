@@ -7,13 +7,10 @@ import {
     ArrowUpRight,
     BookOpen,
     Check,
-    ChevronRight,
     Copy,
     GraduationCap,
     Layers3,
     MapIcon,
-    Search,
-    Sparkles,
     Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -454,7 +451,11 @@ export default function StudentCoursesPage() {
     }, []);
 
     useEffect(() => {
-        void fetchCourses();
+        const timeoutId = window.setTimeout(() => {
+            void fetchCourses();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [fetchCourses]);
 
     const visibleCourses = useMemo(() => {
