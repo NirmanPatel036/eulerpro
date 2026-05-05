@@ -114,11 +114,11 @@ function formatShortDate(iso: string | null) {
 	});
 }
 
-function formatRelative(iso: string | null) {
+function formatRelative(iso: string | null, nowMs: number) {
 	if (!iso) return 'Awaiting submissions';
 	const parsed = new Date(iso).getTime();
 	if (Number.isNaN(parsed)) return 'Awaiting submissions';
-	const diffMs = Date.now() - parsed;
+	const diffMs = nowMs - parsed;
 	const minutes = Math.max(1, Math.round(diffMs / 60_000));
 	if (minutes < 60) return `${minutes} min ago`;
 	const hours = Math.round(minutes / 60);
@@ -280,6 +280,15 @@ export default function InstructorResultsPage() {
 	const [courses, setCourses] = useState<CourseMap>({});
 	const [profiles, setProfiles] = useState<ProfileMap>({});
 	const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+	const [nowMs, setNowMs] = useState(() => Date.now());
+
+	useEffect(() => {
+		const intervalId = window.setInterval(() => {
+			setNowMs(Date.now());
+		}, 60_000);
+
+		return () => window.clearInterval(intervalId);
+	}, []);
 
 	useEffect(() => {
 		const supabase = createClient();
@@ -396,7 +405,6 @@ export default function InstructorResultsPage() {
 	}, []);
 
 	const summaries = useMemo(() => {
-		const nowMs = Date.now();
 		return exams
 			.filter((exam) => isConducted(exam, nowMs))
 			.map<ExamSummary>((exam) => {
@@ -444,7 +452,7 @@ export default function InstructorResultsPage() {
 				const leftTs = parseDateMs(left.latestCompletedAt) ?? parseDateMs(left.exam.scheduled_at) ?? 0;
 				return rightTs - leftTs;
 			});
-	}, [courses, exams, profiles, sessions]);
+	}, [courses, exams, nowMs, profiles, sessions]);
 
 	const overviewStats = useMemo(() => {
 		const totalSubmissions = summaries.reduce((sum, item) => sum + item.submissions, 0);
@@ -533,7 +541,7 @@ export default function InstructorResultsPage() {
 				<div className="flex items-center gap-3">
 					<div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 py-2 text-xs text-slate-500 shadow-sm md:flex">
 						<RadioTower className="h-3.5 w-3.5 text-cyan-500" />
-						{refreshing ? 'Syncing live changes' : `Synced ${formatRelative(lastSyncedAt)}`}
+						{refreshing ? 'Syncing live changes' : `Synced ${formatRelative(lastSyncedAt, nowMs)}`}
 					</div>
 					<Link href="/dashboard/instructor/exams">
 						<Button variant="outline" className="rounded-full border border-slate-200 bg-white/90 text-slate-700">
@@ -711,7 +719,7 @@ export default function InstructorResultsPage() {
 														</div>
 														<span className="font-mono text-lg font-semibold text-slate-900">{item.percentage}%</span>
 													</div>
-													<p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-slate-600">{formatRelative(item.completedAt)}</p>
+													<p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-slate-600">{formatRelative(item.completedAt, nowMs)}</p>
 												</div>
 											))
 										)}
@@ -808,7 +816,7 @@ export default function InstructorResultsPage() {
 												</div>
 
 												<div className="flex items-center gap-3 text-sm text-slate-700">
-													<span>Updated {formatRelative(summary.latestCompletedAt)}</span>
+													<span>Updated {formatRelative(summary.latestCompletedAt, nowMs)}</span>
 													<span className="inline-flex items-center gap-1 font-semibold text-slate-900 transition group-hover:text-cyan-700">
 														Open result room <ArrowRight className="h-4 w-4" />
 													</span>
