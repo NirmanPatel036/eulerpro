@@ -3,9 +3,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-	Trophy, TrendingUp, Target, Zap, Lock, Unlock, Clock, Medal,
-	BarChart3, Activity, Flame, Brain, ArrowUp, ArrowDown, Minus,
-	CalendarDays, User, BookOpen, CheckCircle2, AlertCircle, Loader2
+	Trophy, TrendingUp, Target, Clock, Medal,
+	Activity, Flame, Brain, ArrowUp,
+	BookOpen, CheckCircle2, AlertCircle, Loader2
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ContainerTextFlip } from '@/components/ui/container-text-flip';
@@ -33,6 +33,10 @@ type ExamInfo = {
 type ResultsData = {
 	exams: Map<string, ExamInfo>;
 	sessions: SessionResult[];
+};
+
+type EnrollmentRow = {
+	exams: ExamInfo | ExamInfo[] | null;
 };
 
 const calculateStats = (sessions: SessionResult[]) => {
@@ -87,13 +91,6 @@ const formatTime = (seconds: number) => {
 	return `${mins}m ${secs}s`;
 };
 
-const getTrendIndicator = (value: number, prevValue: number | null) => {
-	if (prevValue === null) return null;
-	if (value > prevValue) return { trend: 'up', change: value - prevValue };
-	if (value < prevValue) return { trend: 'down', change: prevValue - value };
-	return { trend: 'flat', change: 0 };
-};
-
 const ScoreVisualization = ({ percentage }: { percentage: number }) => {
 	const circumference = 2 * Math.PI * 45;
 	const offset = circumference - (percentage / 100) * circumference;
@@ -139,7 +136,6 @@ export default function StudentResultsPage() {
 	const [results, setResults] = useState<ResultsData>({ exams: new Map(), sessions: [] });
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [selectedExam, setSelectedExam] = useState<string | null>(null);
 
 	useEffect(() => {
 		(async () => {
@@ -173,9 +169,10 @@ export default function StudentResultsPage() {
 			const sessions = sessionsRes.data as SessionResult[];
 			const examMap = new Map<string, ExamInfo>();
 
-			(examsRes.data as any[]).forEach((enrollment) => {
-				if (enrollment.exams) {
-					examMap.set(enrollment.exams.id, enrollment.exams);
+			((examsRes.data ?? []) as EnrollmentRow[]).forEach((enrollment) => {
+				const exam = Array.isArray(enrollment.exams) ? enrollment.exams[0] : enrollment.exams;
+				if (exam) {
+					examMap.set(exam.id, exam);
 				}
 			});
 
