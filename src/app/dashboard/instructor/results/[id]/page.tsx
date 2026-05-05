@@ -7,13 +7,11 @@ import {
     ArrowLeft,
     BarChart3,
     ChevronRight,
-    Clock3,
     Loader2,
     Medal,
     Search,
     Sparkles,
     Trophy,
-    UserRound,
     Waves,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -432,16 +430,9 @@ export default function InstructorExamResultsByIdPage() {
             });
     }, [profiles, sessions]);
 
-    useEffect(() => {
-        if (!leaderboard.length) {
-            setFocusedStudentId(null);
-            return;
-        }
-
+    const selectedStudentId = useMemo(() => {
         const hasFocused = leaderboard.some((item) => item.session.student_id === focusedStudentId);
-        if (!focusedStudentId || !hasFocused) {
-            setFocusedStudentId(leaderboard[0].session.student_id);
-        }
+        return hasFocused ? focusedStudentId : leaderboard[0]?.session.student_id ?? null;
     }, [focusedStudentId, leaderboard]);
 
     const filteredRoster = useMemo(() => {
@@ -460,8 +451,8 @@ export default function InstructorExamResultsByIdPage() {
     }, [deferredSearch, leaderboard, rosterFilter]);
 
     const focusedEntry = useMemo(() => {
-        return leaderboard.find((item) => item.session.student_id === focusedStudentId) ?? leaderboard[0] ?? null;
-    }, [focusedStudentId, leaderboard]);
+        return leaderboard.find((item) => item.session.student_id === selectedStudentId) ?? null;
+    }, [leaderboard, selectedStudentId]);
 
     const questionInsights = useMemo(() => {
         return questions
@@ -752,7 +743,7 @@ export default function InstructorExamResultsByIdPage() {
                                     </div>
                                 ) : (
                                     filteredRoster.map((item, index) => {
-                                        const selected = item.session.student_id === focusedStudentId;
+                                        const selected = item.session.student_id === selectedStudentId;
                                         const percentage = item.session.percentage ?? 0;
                                         return (
                                             <motion.button
