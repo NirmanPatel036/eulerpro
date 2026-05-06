@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
     Plus, Search, MoreHorizontal,
@@ -115,7 +116,7 @@ export default function InstructorExamsPage() {
 
     /* copy-link toast */
     const [copied, setCopied] = useState<string | null>(null);
-    const [statusNow, setStatusNow] = useState(0);
+    const [statusNow, setStatusNow] = useState(() => Date.now());
 
     const fetchExams = useCallback(async () => {
         setLoading(true);
@@ -139,10 +140,15 @@ export default function InstructorExamsPage() {
         setLoading(false);
     }, []);
 
-    useEffect(() => { fetchExams(); }, [fetchExams]);
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            void fetchExams();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [fetchExams]);
 
     useEffect(() => {
-        setStatusNow(Date.now());
         const timer = setInterval(() => setStatusNow(Date.now()), 30_000);
         return () => clearInterval(timer);
     }, []);
@@ -223,10 +229,14 @@ export default function InstructorExamsPage() {
 
         if (qs?.length) {
             await supabase.from('questions').insert(
-                qs.map(({ id: _id, exam_id: _eid, ...rest }: { id: string; exam_id: string; [key: string]: unknown }) => ({
-                    ...rest,
-                    exam_id: newExam.id,
-                }))
+                qs.map(({ id: discardId, exam_id: discardExamId, ...rest }: { id: string; exam_id: string; [key: string]: unknown }) => {
+                    void discardId;
+                    void discardExamId;
+                    return {
+                        ...rest,
+                        exam_id: newExam.id,
+                    };
+                })
             );
         }
 
@@ -377,10 +387,12 @@ export default function InstructorExamsPage() {
                                 {/* ── Cover image ───────────────────────────── */}
                                 <div className="relative h-40 bg-linear-to-br from-indigo-400 to-purple-500 shrink-0">
                                     {exam.cover_image_url && (
-                                        <img
+                                        <Image
                                             src={exam.cover_image_url}
                                             alt="Exam cover"
-                                            className="absolute inset-0 w-full h-full object-cover"
+                                            fill
+                                            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                            className="object-cover"
                                         />
                                     )}
                                     <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent" />
@@ -546,7 +558,7 @@ export default function InstructorExamsPage() {
                         <div className="py-2">
                             {courses.length === 0 ? (
                                 <p className="text-sm text-gray-400 text-center py-4">
-                                    No courses yet. <a href="/dashboard/instructor/courses" className="text-indigo-500 underline">Create one first.</a>
+                                    No courses yet. <Link href="/dashboard/instructor/courses" className="text-indigo-500 underline">Create one first.</Link>
                                 </p>
                             ) : (
                                 <div className="flex flex-col gap-2">
