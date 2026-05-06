@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import {
-	BarChart3, TrendingUp, Users, Target, Activity, Award,
-	Calendar, Clock, Zap, AlertTriangle, CheckCircle2, Loader2,
-	Filter, Download, RefreshCw, Eye, EyeOff, ChevronDown
+	BarChart3, Users, Target, Activity, Award,
+	Clock, AlertTriangle, CheckCircle2, Loader2,
+	Download, RefreshCw, Eye, EyeOff, ChevronDown
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ContainerTextFlip } from '@/components/ui/container-text-flip';
 
@@ -34,27 +36,26 @@ type SessionRow = {
 	max_score: number | null;
 };
 
-type ExamReport = {
-	exam: ExamRow;
-	sessions: SessionRow[];
-	stats: {
-		submissions: number;
-		avgScore: number;
-		passRate: number;
-		bestScore: number;
-		worstScore: number;
-		avgTime: number;
-		trustScores: number[];
-	};
-};
-
 type StudentInfo = {
 	id: string;
 	full_name: string | null;
 	email: string;
 };
 
-const StatBox = ({ icon: Icon, label, value, subtitle, color = 'blue' }: any) => (
+type StatBoxProps = {
+	icon: LucideIcon;
+	label: string;
+	value: ReactNode;
+	subtitle?: string;
+	color?: 'blue' | 'red' | 'green' | 'amber' | 'indigo';
+};
+
+type GradientCardProps = {
+	children: ReactNode;
+	className?: string;
+};
+
+const StatBox = ({ icon: Icon, label, value, subtitle, color = 'blue' }: StatBoxProps) => (
 	<motion.div
 		whileHover={{ y: -6 }}
 		className="relative overflow-hidden bg-linear-to-br from-white/60 to-white/30 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-md hover:shadow-xl hover:border-white/60 transition-all duration-300 group"
@@ -73,7 +74,7 @@ const StatBox = ({ icon: Icon, label, value, subtitle, color = 'blue' }: any) =>
 	</motion.div>
 );
 
-const GradientCard = ({ children, className = '' }: any) => (
+const GradientCard = ({ children, className = '' }: GradientCardProps) => (
 		<div className={`bg-linear-to-br from-white to-gray-50 rounded-2xl border border-gray-200 shadow-lg p-6 ${className}`}>
 		{children}
 	</div>
@@ -139,7 +140,11 @@ export default function InstructorReportsPage() {
 	}, []);
 
 	useEffect(() => {
-		void loadReports();
+		const timeoutId = window.setTimeout(() => {
+			void loadReports();
+		}, 0);
+
+		return () => window.clearTimeout(timeoutId);
 	}, [loadReports]);
 
 	const reports = useMemo(() => {
